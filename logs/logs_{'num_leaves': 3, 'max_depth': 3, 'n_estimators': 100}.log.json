@@ -1,0 +1,12 @@
+{"target": 0.8822619047619047, "params": {"learning_rate": 0.20909398034658444, "reg_lambda": 0.7231212485077365}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.0, "delta": 0.0}}
+{"target": 0.8045714285714286, "params": {"learning_rate": 0.0010570730338550984, "reg_lambda": 0.30930924690552136}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.008195, "delta": 0.008195}}
+{"target": 0.8825952380952381, "params": {"learning_rate": 0.055279381066616826, "reg_lambda": 0.3751903782737007}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.027736, "delta": 0.019541}}
+{"target": 0.878595238095238, "params": {"learning_rate": 0.41517095203577126, "reg_lambda": 0.6635365379871643}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.045203, "delta": 0.017467}}
+{"target": 0.8849047619047619, "params": {"learning_rate": 0.07550404987369105, "reg_lambda": 0.632523646362735}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.062603, "delta": 0.0174}}
+{"target": 0.8853095238095238, "params": {"learning_rate": 0.043949976917520533, "reg_lambda": 0.7611044241869394}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.082647, "delta": 0.020044}}
+{"target": 0.8864761904761905, "params": {"learning_rate": 0.19841807866772093, "reg_lambda": 0.16984359013607422}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.100966, "delta": 0.018319}}
+{"target": 0.8762619047619047, "params": {"learning_rate": 0.4439608184971979, "reg_lambda": 0.4527282471168412}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.120136, "delta": 0.01917}}
+{"target": 0.8830238095238094, "params": {"learning_rate": 0.21671479032646065, "reg_lambda": 0.3584994247764722}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.139724, "delta": 0.019588}}
+{"target": 0.8797380952380952, "params": {"learning_rate": 0.30533985631650706, "reg_lambda": 0.3989469395071931}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.163006, "delta": 0.023282}}
+{"target": 0.8805714285714287, "params": {"learning_rate": 0.2770474543339898, "reg_lambda": 0.7050277174586626}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.182965, "delta": 0.019959}}
+{"target": 0.8902142857142858, "params": {"learning_rate": 0.07507397754679701, "reg_lambda": 0.4126168456197874}, "datetime": {"datetime": "2024-02-11 02:17:58", "elapsed": 0.203698, "delta": 0.020733}}

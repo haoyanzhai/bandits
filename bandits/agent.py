@@ -1,5 +1,4 @@
 import numpy as np
-import pymc3 as pm
 
 
 class Agent(object):
@@ -10,7 +9,7 @@ class Agent(object):
     """
     def __init__(self, bandit, policy, prior=0, gamma=None):
         self.policy = policy
-        self.k = bandit.k
+        self.k = len(bandit.action_values)
         self.prior = prior
         self.gamma = gamma
         self._value_estimates = prior*np.ones(self.k)
@@ -85,52 +84,3 @@ class GradientAgent(Agent):
     def reset(self):
         super(GradientAgent, self).reset()
         self.average_reward = 0
-
-
-class BetaAgent(Agent):
-    """
-    The Beta Agent is a Bayesian approach to a bandit problem with a Bernoulli
-     or Binomial likelihood, as these distributions have a Beta distribution as
-     a conjugate prior.
-    """
-    def __init__(self, bandit, policy, ts=True):
-        super(BetaAgent, self).__init__(bandit, policy)
-        self.n = bandit.n
-        self.ts = ts
-        self.model = pm.Model()
-        with self.model:
-            self._prior = pm.Beta('prior', alpha=np.ones(self.k),
-                                  beta=np.ones(self.k), shape=(1, self.k),
-                                  transform=None)
-        self._value_estimates = np.zeros(self.k)
-
-    def __str__(self):
-        if self.ts:
-            return 'b/TS'
-        else:
-            return 'b/{}'.format(str(self.policy))
-
-    def reset(self):
-        super(BetaAgent, self).reset()
-        self._prior.distribution.alpha = np.ones(self.k)
-        self._prior.distribution.beta = np.ones(self.k)
-
-    def observe(self, reward):
-        self.action_attempts[self.last_action] += 1
-
-        self.alpha[self.last_action] += reward
-        self.beta[self.last_action] += self.n - reward
-
-        if self.ts:
-            self._value_estimates = self._prior.random()
-        else:
-            self._value_estimates = self.alpha / (self.alpha + self.beta)
-        self.t += 1
-
-    @property
-    def alpha(self):
-        return self._prior.distribution.alpha
-
-    @property
-    def beta(self):
-        return self._prior.distribution.beta

@@ -1,22 +1,30 @@
+import os
 import numpy as np
-import pymc3 as pm
+
+from bayes_opt import BayesianOptimization
+from bayes_opt.logger import JSONLogger
+from bayes_opt.event import Events
+from bayes_opt.util import load_logs
+from abc import ABC, abstractmethod
+from sklearn.model_selection import ParameterGrid
 
 
-class MultiArmedBandit(object):
+class MultiArmedBandit(ABC):
     """
     A Multi-armed Bandit
     """
-    def __init__(self, k):
-        self.k = k
-        self.action_values = np.zeros(k)
-        self.optimal = 0
-
+    def __init__(self, func, params_list_dict, pbounds):
+        self.func = func
+        self.params_list_dict = params_list_dict
+        self.pbounds = pbounds
+    
+    @abstractmethod
     def reset(self):
-        self.action_values = np.zeros(self.k)
-        self.optimal = 0
+        pass
 
+    @abstractmethod
     def pull(self, action):
-        return 0, True
+        pass
 
 
 class GaussianBandit(MultiArmedBandit):
@@ -24,77 +32,64 @@ class GaussianBandit(MultiArmedBandit):
     Gaussian bandits model the reward of a given arm as normal distribution with
     provided mean and standard deviation.
     """
-    def __init__(self, k, mu=0, sigma=1):
-        super(GaussianBandit, self).__init__(k)
-        self.mu = mu
-        self.sigma = sigma
+    def __init__(self, func, params_list_dict, pbounds, init_points, n_iter):
+        super(GaussianBandit, self).__init__(func, params_list_dict, pbounds)
+        self.optimal = None
+        self.init_points = init_points
+        self.n_iter = n_iter
         self.reset()
 
+    def _get_action_values(self, discrete_params):
+        def black_box_function(**continuous_params):
+            return self.func(**continuous_params, **discrete_params)
+        log_file = f"./logs/logs_{discrete_params}.log"
+        optimizer = BayesianOptimization(
+            f=black_box_function,
+            pbounds=self.pbounds,
+            random_state=1,
+            allow_duplicate_points=True
+        )
+        if os.path.exists(log_file + '.json'):
+            load_logs(optimizer, logs=[log_file + '.json'])
+            init_points = 0
+        else:
+            init_points = self.init_points
+            logger = JSONLogger(path=log_file)
+            optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
+        optimizer.maximize(init_points=init_points, n_iter=self.n_iter)
+        print(optimizer.max, discrete_params)
+        return optimizer.max["target"], optimizer.max["params"]
+
+    def _update_action_value(self, action):
+        action_tuple = list(self.action_values.keys())[action]
+        params = {
+            key: val
+            for key, val in zip(self.params_list_dict.keys(), action_tuple)
+        }
+        print(params)
+        self.action_values[action_tuple], inner_params = (
+            self._get_action_values(params)
+        )
+        self.optimal = np.argmax(self.action_values)
+        return self.action_values[action_tuple], inner_params
+
     def reset(self):
-        self.action_values = np.random.normal(self.mu, self.sigma, self.k)
+        if os.path.exists("./logs"):
+            os.system("rm -rf ./logs")
+        os.makedirs("./logs")
+        params_grid = ParameterGrid(self.params_list_dict)
+        self.action_values = {}
+        for params in params_grid:
+            params = {key: params[key] for key in self.params_list_dict.keys()}
+            self.action_values[tuple(params.values())] = (
+                self._get_action_values(params)
+            )
         self.optimal = np.argmax(self.action_values)
 
     def pull(self, action):
-        return (np.random.normal(self.action_values[action]),
-                action == self.optimal)
-
-
-class BinomialBandit(MultiArmedBandit):
-    """
-    The Binomial distribution models the probability of an event occurring with
-    p probability k times over N trials i.e. get heads on a p-coin k times on
-    N flips.
-
-    In the bandit scenario, this can be used to approximate a discrete user
-    rating or "strength" of response to a single event.
-    """
-    def __init__(self, k, n, p=None, t=None):
-        super(BinomialBandit, self).__init__(k)
-        self.n = n
-        self.p = p
-        self.t = t
-        self.model = pm.Model()
-        with self.model:
-            self.bin = pm.Binomial('binomial', n=n*np.ones(k, dtype=np.int),
-                                   p=np.ones(k)/n, shape=(1, k), transform=None)
-        self._samples = None
-        self._cursor = 0
-
-        self.reset()
-
-    def reset(self):
-        if self.p is None:
-            self.action_values = np.random.uniform(size=self.k)
-        else:
-            self.action_values = self.p
-        self.bin.distribution.p = self.action_values
-        if self.t is not None:
-            self._samples = self.bin.random(size=self.t).squeeze()
-            self._cursor = 0
-
-        self.optimal = np.argmax(self.action_values)
-
-    def pull(self, action):
-        return self.sample[action], action == self.optimal
-
-    @property
-    def sample(self):
-        if self._samples is None:
-            return self.bin.random()
-        else:
-            val = self._samples[self._cursor]
-            self._cursor += 1
-            return val
-
-
-class BernoulliBandit(BinomialBandit):
-    """
-    The Bernoulli distribution models the probability of a single event
-    occurring with p probability i.e. get heads on a single p-coin flip. This is
-    the special case of the Binomial distribution where N=1.
-
-    In the bandit scenario, this can be used to approximate a hit or miss event,
-    such as if a user clicks on a headline, ad, or recommended product.
-    """
-    def __init__(self, k, p=None, t=None):
-        super(BernoulliBandit, self).__init__(k, 1, p=p, t=t)
+        discrete, continuous = self._update_action_value(action)
+        return (
+            discrete,
+            (list(self.action_values.keys())[action], continuous),
+            action == self.optimal
+        )

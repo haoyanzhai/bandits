@@ -53,15 +53,28 @@ class Agent(object):
 
 class GradientAgent(Agent):
     """
-    The Gradient Agent learns the relative difference between actions instead of
-    determining estimates of reward values. It effectively learns a preference
-    for one action over another.
+    The Gradient Agent learns the relative difference between actions instead
+    of determining estimates of reward values. It effectively learns a
+    preference for one action over another.
     """
-    def __init__(self, bandit, policy, prior=0, alpha=0.1, baseline=True):
+    def __init__(
+        self,
+        bandit,
+        policy,
+        prior=0,
+        alpha=0.1,
+        avg_coef=None,
+        baseline=True,
+        increase_rate=0.01,
+    ):
         super(GradientAgent, self).__init__(bandit, policy, prior)
         self.alpha = alpha
+        self.adaptive_alpha = self.alpha
+        self.increase_rate = increase_rate
+        self.increase_value = self.alpha * self.increase_rate
         self.baseline = baseline
         self.average_reward = 0
+        self.avg_coef = avg_coef
 
     def __str__(self):
         return 'g/\u03B1={}, bl={}'.format(self.alpha, self.baseline)
@@ -71,15 +84,29 @@ class GradientAgent(Agent):
 
         if self.baseline:
             diff = reward - self.average_reward
-            self.average_reward += 1/np.sum(self.action_attempts) * diff
+            avg_coef = (
+                self.avg_coef if self.avg_coef
+                else 1/np.sum(self.action_attempts)
+            )
+            self.average_reward += avg_coef * diff
 
-        pi = np.exp(self.value_estimates) / np.sum(np.exp(self.value_estimates))
+        pi = (
+            np.exp(self.value_estimates) / np.sum(np.exp(self.value_estimates))
+        )
 
         ht = self.value_estimates[self.last_action]
-        ht += self.alpha*(reward - self.average_reward)*(1-pi[self.last_action])
-        self._value_estimates -= self.alpha*(reward - self.average_reward)*pi
+        ht += (
+            self.adaptive_alpha
+            * (reward - self.average_reward)*(1-pi[self.last_action])
+        )
+        self._value_estimates -= (
+            self.adaptive_alpha*(reward - self.average_reward)*pi
+        )
         self._value_estimates[self.last_action] = ht
         self.t += 1
+        self.adaptive_alpha += self.increase_value
+        self.adaptive_alpha = min(self.adaptive_alpha, 1)
+        print(self.adaptive_alpha)
 
     def reset(self):
         super(GradientAgent, self).reset()

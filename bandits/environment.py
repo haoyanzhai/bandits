@@ -16,7 +16,7 @@ class Environment(object):
         self.bandit.reset()
         self.agent.reset()
 
-    def run(self, trials, file=None):
+    def run(self, trials, file=None, stop_iter=70):
         scores = np.zeros(trials)
         actions = []
 
@@ -26,6 +26,7 @@ class Environment(object):
             print(t)
             start = time.time()
             action = self.agent.choose()
+            print(list(self.bandit.action_values.keys())[action])
             reward, action, conti_action = self.bandit.pull(action)
             self.agent.observe(reward)
             end = time.time()
@@ -46,8 +47,11 @@ class Environment(object):
             print(action, reward)
             queue.append((new_key, f'{reward:.2f}'))
             counter[(new_key, f'{reward:.2f}')] += 1
-            if max(counter.values()) >= 30:
-                print("stop because of 30 same actions with same reward")
+            if max(counter.values()) >= stop_iter:
+                print(
+                    f"stop because of {stop_iter}"
+                    f"same actions with same reward"
+                )
                 break
 
         return scores, actions

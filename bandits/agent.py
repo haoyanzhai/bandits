@@ -83,6 +83,7 @@ class GradientAgent(Agent):
         self.action_attempts[self.last_action] += 1
 
         if self.baseline:
+            # self.average_reward = max(reward, self.average_reward)
             diff = reward - self.average_reward
             avg_coef = (
                 self.avg_coef if self.avg_coef
@@ -93,6 +94,7 @@ class GradientAgent(Agent):
         pi = (
             np.exp(self.value_estimates) / np.sum(np.exp(self.value_estimates))
         )
+        print(reward)
 
         ht = self.value_estimates[self.last_action]
         ht += (
